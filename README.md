@@ -1,507 +1,151 @@
-#     cric-monex-root-template-v2
+# Relay — offline-first HQ-to-kiosk demo
 
-A full-stack monorepo featuring NestJS APIs, Next.js frontends, and Prisma ORM with PostgreSQL.
+A working proof of concept for a retail kiosk that stays useful during connectivity failures. HQ publishes versioned menus; a kiosk browses its last-known-good menu and builds a durable cart while disconnected. Checkout resumes only after recovery and authoritative validation by the backend.
 
-## What's inside?
+Built on the Monex starter’s **npm workspaces / Turborepo, Next.js, NestJS, Prisma and PostgreSQL** architecture. Payment processing is a mock gateway: no real money or payment-card data is involved.
 
-This Turborepo includes the following packages & apps:
+![Relay kiosk after synchronization and payment recovery](docs/kiosk-recovered.png)
 
-### Apps and Packages
+## What the demo does
 
-```shell
-.
-├── apps
-│   ├── web                # Next.js 16 Frontend         → http://localhost:3000
-│   ├── api                # NestJS 11 API              → http://localhost:3001
-│   └── db                        # PostgreSQL 16 (Docker Compose)    → localhost:5433
-└── packages
-    ├── @repo/api-client          # Frontend API definitions & types (no fetch)
-    ├── @repo/design-system       # Tailwind 4 config, colors, global styles
-    ├── @repo/eslint-config       # ESLint configurations (includes Prettier)
-    ├── @repo/icons               # SVG icon components (SVGR-generated)
-    ├── @repo/jest-config         # Jest configurations
-    ├── @repo/prisma              # Prisma 7 client, schema, and types
-    ├── @repo/typescript-config   # TypeScript configurations
-    └── @repo/ui                  # React 19 component library with Tailwind
+- **HQ control:** edit prices and availability, publish immutable menu snapshots, inspect history, and restore an earlier menu as a new version. Optimistic version checks reject conflicting HQ edits.
+- **Offline kiosk:** browse a cached menu and edit a cart without HQ connectivity. The menu, cart, outbox and unresolved payment identity survive page reloads in browser storage.
+- **Versioned synchronization:** probe the current version, download changed snapshots, validate their schema and SHA-256 checksum, then atomically activate them. A corrupted download leaves the previous version active.
+- **Recovery:** move through ONLINE, DEGRADED, OFFLINE and RECOVERING; reconcile payments before refreshing configuration and draining telemetry. Retries use backoff and jitter.
+- **Checkout validation:** recalculate prices at HQ, reject unavailable items, issue a two-minute quote and require explicit acceptance. A new menu invalidates an unpaid quote.
+- **Payment safety:** simulate success, decline, or a successful charge with a lost response. UNKNOWN outcomes block another checkout until reconciled. Stable payment identities and database uniqueness prevent duplicate charges and paid orders.
+- **Observability:** show menu lag, pending events, recovery activity and the authoritative payment ledger.
+
+The simulator disconnects **kiosk API traffic** while leaving the HQ panel available. It does not disconnect the browser from the frontend host. See the [walkthrough and consistency rules](docs/kiosk-demo.md) for details.
+
+## Quick start
+
+Requirements: Node.js **22.12+**, npm, and Docker Compose with PostgreSQL 16, or an existing PostgreSQL instance.
+
+```sh
+npm ci
+npm run env:distribute
 ```
 
-Each package and application are written in [TypeScript](https://www.typescriptlang.org/).
+Installation creates a root `.env` from `.env.example` if one does not exist. Review it before starting the database. The default database settings are:
 
-### Tech Stack & Versions
+```dotenv
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=monex-root-template-v2-db
+DB_PORT=5433
+DB_CONTAINER_NAME=monex-root-template-v2-db
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/monex-root-template-v2-db?schema=public"
+API_PORT=3001
+NEXT_PUBLIC_API="http://localhost:3001"
+```
 
-**Runtime & Apps**
+Use a concrete `DATABASE_URL`; dotenv does not expand `${DB_*}` placeholders. If you change the database name or port, update both the Compose settings and the connection URL. Existing `.env` files are preserved and are not committed.
 
-| Component                                                 | Version         | Port       |
-| --------------------------------------------------------- | --------------- | ---------- |
-| **Node.js**                                               | >=22.12         | -          |
-| [**Next.js Web**](https://nextjs.org/) (`apps/web`)       | ^16.0.7         | 3000       |
-| [**NestJS API**](https://nestjs.com/) (`apps/api`)        | ^11.0.0         | 3001       |
-| [**PostgreSQL**](https://www.postgresql.org/) (`apps/db`) | 16-alpine       | 5433       |
-| **Swagger** (`/api`)                                      | @nestjs/swagger | 3001, 3003 |
+```sh
+# Start the isolated Compose database and wait until it is healthy.
+docker compose --env-file .env -f apps/db/docker-compose.yml up -d --wait postgres
 
-**Core Libraries**
-
-| Library                                           | Version |
-| ------------------------------------------------- | ------- |
-| [**React**](https://react.dev/)                   | ^19.1.0 |
-| [**Prisma ORM**](https://www.prisma.io/)          | ^7.1.0  |
-| [**Tailwind CSS**](https://tailwindcss.com/)      | ^4.1.11 |
-| [**TanStack Query**](https://tanstack.com/query)  | ^5.80.7 |
-| [**TypeScript**](https://www.typescriptlang.org/) | 5.5.4+  |
-| [**SVGR**](https://react-svgr.com/)               | ^8.1.0  |
-
-**Tooling**
-
-| Tool                                                   | Purpose            |
-| ------------------------------------------------------ | ------------------ |
-| [**Turborepo**](https://turbo.build/repo)              | Monorepo build     |
-| [**ESLint**](https://eslint.org/)                      | Code linting       |
-| [**Prettier**](https://prettier.io)                    | Code formatting    |
-| [**Jest**](https://jestjs.io/)                         | Testing            |
-| [**Docker Compose**](https://docs.docker.com/compose/) | Database container |
-| [**Husky**](https://typicode.github.io/husky/)         | Git hooks          |
-| [**Commitlint**](https://commitlint.js.org/)           | Commit messages    |
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js >= 22.12 (required for Prisma 7)
-- Docker and Docker Compose (for PostgreSQL database)
-- npm (recommended)
-
-### Setup
-
-1. **Install dependencies**:
-
-   ```bash
-   npm install
-   ```
-
-   This will automatically:
-   - Create `.env` from `.env.example` if it doesn't exist
-   - Set up the environment configuration
-
-2. **Start PostgreSQL database**:
-
-   ```bash
-   npm run db:start
-   ```
-
-3. **Configure database connection** (if needed):
-
-   The `.env` file is automatically created from `.env.example` during `npm install`. If you need to update it, edit the root `.env` file:
-
-   ```env
-   DATABASE_URL="postgresql://postgres:postgres@localhost:5433/monex-root-template-v2-db?schema=public"
-   ```
-
-   **Note**: When you run `npm run dev`, the root `.env` file is automatically distributed to all apps and packages (except config packages) via symlinks. This ensures all parts of the monorepo use the same environment variables.
-
-4. **Generate Prisma client and push schema**:
-
-   ```bash
-   npm run db:generate
-   npm run db:push
-   npm run db:seed
-   ```
-
-5. **Start development servers**:
-
-   ```bash
-   npm run dev
-   ```
-
-   This will:
-   - Automatically distribute the root `.env` file to all apps and packages
-   - Start all development servers:
-     - Web on <http://localhost:3000>
-     - API on <http://localhost:3001>
-
-### Commands
-
-This `Turborepo` includes useful commands for all apps and packages.
-
-#### Database Commands
-
-```bash
-# Start PostgreSQL database
-npm run db:start
-# or
-npm run db:up
-
-# Stop PostgreSQL database
-npm run db:stop
-# or
-npm run db:down
-
-# Generate Prisma client
-npm run db:generate
-
-# Push schema to database
+# Create the demo schema and build shared packages before the apps.
 npm run db:push
-
-# Run migrations
-npm run db:migrate
-
-# Seed database
-npm run db:seed
-
-# Open Prisma Studio
-npm run db:studio
-```
-
-#### Build
-
-```bash
-# Will build all the app & packages with the supported `build` script.
 npm run build
 
-# ℹ️ If you plan to only build apps individually,
-# Please make sure you've built the packages first.
+# In one terminal:
+npm run dev -w api
+
+# In another terminal:
+npm run dev -w web
 ```
 
-#### Develop
+Open [the demo](http://localhost:3000). The API runs at [localhost:3001](http://localhost:3001), with a route listing in [Swagger](http://localhost:3001/api). The first API startup creates the initial six-item menu automatically; the starter’s link seed is not needed.
 
-```bash
-# Will run the development server for all the app & packages with the supported `dev` script.
-# This automatically distributes the root .env file to all apps and packages before starting.
-npm run dev
+`npm run dev` also launches all workspace development tasks through Turborepo. The inherited database workspace task uses the legacy `docker-compose` executable; the separate commands above work with Docker Compose v2.
+
+The Compose project is named `relay-kiosk-lab`, keeping its database volume separate from other starter projects. Database schema setup uses `db push` for this proof of concept.
+
+### Alternative ports and an existing database
+
+If ports are occupied, set `API_PORT` and `NEXT_PUBLIC_API` to the same alternative API port, and point `DATABASE_URL` at your PostgreSQL instance. For example, with API port 3101:
+
+```sh
+npm run build
+node --env-file=.env apps/api/dist/main.js
+# In another terminal:
+npm run start -w web -- --port 3100 --hostname 127.0.0.1
 ```
 
-**Note**: The `predev` script automatically creates symlinks from the root `.env` to each app and package (excluding config packages like `eslint-config`, `jest-config`, `typescript-config`).
+This serves the production frontend at [localhost:3100](http://localhost:3100). Public frontend variables are embedded at build time, so rebuild after changing `NEXT_PUBLIC_API`. The API binds to loopback for local demonstration.
 
-#### test
+## Try the failure scenarios
 
-```bash
-# Will launch a test suites for all the app & packages with the supported `test` script.
-pnpm run test
+1. Add a burger, then select **Disconnect kiosk**.
+2. Change its price at HQ and select **Publish menu version**. The kiosk retains the old version and price. Add another item and reload: the cart and simulated outage remain.
+3. Select **Restore connection**. Watch the version advance and the outbox drain. Validate checkout, review the current HQ quote and accept it.
+4. Choose **Charged · response lost** before paying. Observe UNKNOWN followed by reconciliation to PAID, with one paid order.
+5. Enable **Corrupt download**, publish another version and sync. The kiosk keeps its last-known-good menu. Disable corruption and sync again.
+6. Mark an item unavailable at HQ to see checkout rejection, or use **Restore as new** to demonstrate rollback without decreasing version numbers.
 
-# You can launch e2e testes with `test:e2e`
-pnpm run test:e2e
+![Kiosk using its stale menu while HQ has a newer version](docs/kiosk-offline.png)
 
-# See `@repo/jest-config` to customize the behavior.
+## Architecture and package boundaries
+
+```text
+apps/
+  web/                       Next.js UI: HQ panel and kiosk simulator
+    components/kiosk-lab.tsx  Durable local state and recovery coordinator
+    services/kiosk.service.ts Frontend transport and snapshot verification
+  api/                       NestJS HTTP API
+    src/kiosk/               Controller and authoritative business service
+    src/prisma/              Shared Prisma client lifecycle
+  db/                        PostgreSQL Docker Compose configuration
+packages/
+  api-client/                Typed, runtime-independent endpoint contracts
+  prisma/                    Database schema, generated client and shared types
+  design-system/             Shared styling foundation
+  ui/                        Existing shared UI components
+  icons/                     Existing SVG icon package
+  eslint-config/             Shared lint configuration
+  jest-config/               Shared test configuration
+  typescript-config/         Shared TypeScript configuration
 ```
 
-#### Lint
+`@repo/api-client` defines requests and responses without fetching or depending on React or NestJS. The frontend owns fetch behavior; TanStack Query manages HQ server-state reads. Nest controllers route requests to services, and services use the shared Prisma client for authoritative database operations.
 
-```bash
-# Will lint all the app & packages with the supported `lint` script.
-# See `@repo/eslint-config` to customize the behavior.
-pnpm run lint
+Prisma models persist `MenuSnapshot`, `CheckoutQuote`, `Payment`, `KioskOrder` and `KioskEvent`. The original `Link` model and endpoints remain as starter examples. Payment and publication transactions use a PostgreSQL advisory lock; payment-to-quote and order-to-payment uniqueness enforce one logical effect under retries.
+
+For endpoint contracts, see [kiosk.ts](packages/api-client/src/kiosk.ts). For synchronization details, ownership rules and recovery order, see [the design guide](docs/kiosk-demo.md).
+
+## Validation
+
+```sh
+# Build all workspaces and check frontend types.
+npm run build
+npm run check-types -w web
+
+# Financial and menu invariants; requires the compiled API.
+node --test scripts/test-kiosk-unit.cjs
+
+# Existing starter tests.
+npm run test -w api -- --runInBand
+
+# Integration tests: point both variables at the same disposable demo instance.
+TEST_API=http://localhost:3001 node --env-file=.env scripts/test-kiosk-integration.mjs
 ```
 
-#### Format
+Integration tests append quotes, payments and events, then restore the original menu as a new version. They verify authoritative pricing, publication conflicts, expiry, sold-out validation, eight concurrent payment retries, UNKNOWN reconciliation, exactly one paid order and duplicate event delivery. Do not run them against a production database.
 
-```bash
-# Will format all the supported `.ts,.js,json,.tsx,.jsx` files.
-# See `@repo/eslint-config/prettier-base.js` to customize the behavior.
-npm run format
+Optional browser tests require Playwright and its Chromium browser to be installed separately. Point `PLAYWRIGHT_MODULE` at that installation:
+
+```sh
+TEST_WEB=http://localhost:3000 PLAYWRIGHT_MODULE=/absolute/path/to/playwright node scripts/test-kiosk-browser.cjs
 ```
 
-### Git Hooks & CI
+Browser checks exercise the full outage/reload/recovery flow, corruption rejection, payment reconciliation and mobile overflow. They refresh the screenshots in `docs/`. The scripts default to the alternative demo ports 3100/3101 when the test URL variables are omitted.
 
-#### Pre-commit
+Commits use `type(scope): description`. The existing Husky hooks run staged lint/format checks, workspace type checks and Commitlint.
 
-Automatically runs on every commit via Husky:
+## Scope and production gaps
 
-- **ESLint** + **Prettier** on staged `.ts/.tsx` files
-- **Prettier** on staged `.json/.md/.css` files
+This is a **single-kiosk, localhost proof of concept**. Keep one kiosk tab per browser profile. Browser localStorage supplies demo durability; there is no separate store gateway, multi-tab coordination or service worker for cold-starting without the frontend host.
 
-#### Commit Messages
-
-Uses [Conventional Commits](https://www.conventionalcommits.org/) format with required scope:
-
-```bash
-# Format: type(scope): message
-feat(web): add user authentication
-fix(api): resolve database connection issue
-docs(readme): update installation steps
-refactor(prisma): optimize query performance
-```
-
-**Allowed types:** `build`, `chore`, `docs`, `feat`, `fix`, `refactor`, `test`, `release`
-
-#### GitHub Actions
-
-Runs on all pushes and pull requests:
-
-- ESLint across all packages
-- Prettier format check
-- TypeScript type checking
-
-## Project Structure
-
-### API Endpoints
-
-The NestJS APIs provide the following endpoints with **Swagger documentation**:
-
-- API: `http://localhost:3001/api`
-- API: `http://localhost:3003/api`
-
-- `GET /links` - Get all links
-- `GET /links/:id` - Get a specific link
-- `POST /links` - Create a new link
-- `PATCH /links/:id` - Update a link
-- `DELETE /links/:id` - Delete a link
-
-#### DTOs & Swagger
-
-DTOs implement Prisma types to ensure type alignment:
-
-```typescript
-// apps/registry-api/src/links/dto/create-link.dto.ts
-import { ApiProperty } from '@nestjs/swagger';
-import type { Prisma } from '@repo/prisma';
-
-export class CreateLinkDto implements Prisma.LinkCreateInput {
-  @ApiProperty({ example: 'https://google.com' })
-  url: string;
-
-  @ApiProperty({ example: 'Google' })
-  title: string;
-
-  @ApiProperty({ example: 'Search engine', required: false })
-  description?: string;
-}
-```
-
-**Why this pattern?**
-
-- ✅ `implements Prisma.LinkCreateInput` - TypeScript enforces DTO ↔ Prisma alignment
-- ✅ `@ApiProperty()` - Swagger gets proper documentation with examples
-- ✅ Single source of truth - Prisma schema defines the data model
-- ✅ Compile-time errors if DTO drifts from schema
-
-### Frontend
-
-The Next.js apps display database results fetched from their respective NestJS APIs. The frontends:
-
-- Fetches links from the API on server-side
-- Displays them in a styled card layout
-- Shows link metadata (ID, URL, creation date)
-- Uses Prisma-generated TypeScript types for type safety
-
-### Shared Packages
-
-- **@repo/api-client**: Frontend API definitions (no fetch, no React, no Next.js)
-  - Endpoint definitions with typed request/response
-  - Shared DTOs (`CreateLinkDto`, `UpdateLinkDto`)
-  - Runtime-agnostic - works on server and client components
-  - **Shared across all frontend apps only**
-
-- **@repo/prisma**: Shared Prisma client and schema
-  - Exports singleton Prisma client instance
-  - Exports all Prisma types (`Prisma`, `Link`, etc.)
-  - **Ready to publish as an npm package** (see [Architecture Philosophy](#architecture-philosophy))
-
-- **@repo/design-system**: Shared styling foundation
-  - Tailwind CSS configuration and color palette
-  - Global CSS variables and styles
-  - Used by all frontend apps
-
-- **@repo/icons**: SVG icon components library
-  - SVG files converted to React components using SVGR
-  - TypeScript support with full type safety
-  - Optimized SVGs with `currentColor` for styling flexibility
-  - See [@repo/icons README](./packages/icons/README.md) for usage
-
-- **@repo/ui**: Shared React component library
-  - Reusable components (Button, Card, etc.)
-  - Built with Tailwind CSS from `@repo/design-system`
-
-### Icon System with SVGR
-
-The `@repo/icons` package uses [SVGR](https://react-svgr.com/) to automatically convert SVG files into React components. This provides a type-safe, tree-shakeable icon system.
-
-**How it works:**
-
-1. **SVG Source Files**: Place SVG files in `packages/icons/src/icons/` (e.g., `arrow-right.svg`)
-
-2. **Build Process**: SVGR transforms SVGs into React components:
-
-   ```bash
-   npm run build:icons  # Converts SVG → React components in dist/
-   ```
-
-3. **Auto-Generated Index**: The build process creates TypeScript exports:
-
-   ```typescript
-   // packages/icons/src/index.ts (auto-generated)
-   export { default as ArrowRight } from '../dist/ArrowRight';
-   ```
-
-4. **Usage in Apps**: Import icons as React components:
-
-   ```tsx
-   import { ArrowRight, AddUser } from '@repo/icons';
-
-   <ArrowRight className="text-primary-600 h-5 w-5" />;
-   ```
-
-**SVGR Configuration** (`.svgrrc.js`):
-
-- **TypeScript**: Generates `.tsx` files with full type safety
-- **SVGO Optimization**: Automatically optimizes SVG files
-- **Color Replacement**: `#000` and `#000000` → `currentColor` for styling flexibility
-- **Icon Mode**: Optimized for icon usage (removes dimensions, preserves viewBox)
-
-**Development Workflow**:
-
-- `npm run build` - Build all icons and regenerate index
-- `npm run dev` - Watch mode (auto-rebuilds on SVG changes)
-- Icons are automatically converted from kebab-case filenames to PascalCase component names
-
-### Data Fetching Architecture
-
-This project separates **API definitions** from **fetch logic** for maximum flexibility:
-
-```
-@repo/api-client (shared)    apps/*-web (per-app)
-┌─────────────────────┐      ┌─────────────────────────────────┐
-│ linksApi.list()     │      │ lib/fetch/server.ts (SSR)       │
-│ linksApi.detail(id) │ ──▶  │ lib/fetch/client.ts (CSR)       │
-│ linksApi.create()   │      │ queries/links.ts (TanStack)     │
-└─────────────────────┘      └─────────────────────────────────┘
-```
-
-**How it works:**
-
-1. **`@repo/api-client`** defines endpoints as pure data (no fetch):
-
-```typescript
-// packages/api-client/src/links.ts
-export const linksApi = {
-  list: () => ({ url: '/links', method: 'GET' }),
-  detail: (id: number) => ({ url: `/links/${id}`, method: 'GET' }),
-  create: (data) => ({ url: '/links', method: 'POST', body: data }),
-};
-```
-
-2. **Each app** has its own fetch utilities that consume these definitions:
-
-```typescript
-// apps/registry-web/lib/fetch/server.ts - Server-side fetch
-export async function serverFetch<T>(endpoint: ApiEndpoint<T>): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${endpoint.url}`, {
-    method: endpoint.method,
-    body: endpoint.body ? JSON.stringify(endpoint.body) : undefined,
-    cache: 'no-store', // Server controls caching
-  });
-  return response.json();
-}
-
-// apps/registry-web/lib/fetch/client.ts - Client-side fetch (for TanStack Query)
-export async function clientFetch<T>(endpoint: ApiEndpoint<T>): Promise<T> {
-  // Same logic, but TanStack Query handles caching
-}
-```
-
-3. **Usage** differs by component type:
-
-**Server Components** use `serverFetch()` directly:
-
-```typescript
-// apps/registry-web/app/page.tsx (Server Component)
-import { linksApi } from '@repo/api-client';
-import { serverFetch } from '@/lib/fetch/server';
-
-export default async function Page() {
-  const links = await serverFetch(linksApi.list());
-  return <LinksList links={links} />;
-}
-```
-
-**Client Components** use TanStack Query hooks:
-
-```typescript
-// apps/registry-web/components/links-client.tsx
-'use client';
-import { useLinksQuery } from '@/queries/links';
-
-export function LinksClient() {
-  const { data: links, isLoading } = useLinksQuery();
-  if (isLoading) return <Loading />;
-  return <LinksList links={links} />;
-}
-```
-
-**Why this pattern?**
-
-- ✅ **Share definitions, not fetch** - `@repo/api-client` has no fetch, no React, no Next.js
-- ✅ **Per-app control** - Each app manages caching, headers, error handling
-- ✅ **Server vs client separation** - Different strategies for SSR and CSR
-- ✅ **Type safety** - Full TypeScript inference from endpoint to response
-- ✅ **Easy to test** - Mock endpoints without mocking fetch
-
-### Extending Apps
-
-> **💡 Simple Extension Pattern**: To add a new Next.js app, simply duplicate an existing app directory and change its name!
-
-This monorepo is designed to make adding new apps straightforward:
-
-1. **Duplicate an existing app**:
-
-   ```bash
-   cp -r apps/registry-web apps/my-new-app
-   ```
-
-2. **Update the app name** in the following files:
-   - `apps/my-new-app/package.json` - Change the name to `"my-new-app"`
-   - `apps/my-new-app/package.json` - Update the `"dev"` script port (e.g., `--port 3004`)
-   - `apps/my-new-app/next.config.js` (if it exists) - Update any app-specific configurations
-
-3. **That's it!** The new app will:
-   - ✅ Automatically use shared packages (`@repo/design-system`, `@repo/ui`, `@repo/api-client`)
-   - ✅ Inherit all Tailwind configurations from the design system
-   - ✅ Use the same environment variables (via symlink distribution)
-   - ✅ Work with Turborepo's build and dev commands
-   - ✅ Share TypeScript, ESLint, and Prettier configurations
-
-**Example: Creating an admin dashboard**
-
-```bash
-# 1. Duplicate an existing app
-cp -r apps/registry-web apps/admin
-
-# 2. Update package.json
-cd apps/admin
-# Change "name": "registry-web" → "name": "admin"
-# Change port from 3001 → 3004
-
-# 3. Start developing!
-npm run dev
-# Your new admin app will be available at http://localhost:3004
-```
-
-All shared packages, configurations, and utilities are automatically available to your new app. This makes it incredibly easy to spin up additional frontend applications while maintaining consistency across your monorepo.
-
-### Environment Variables
-
-The project uses a centralized `.env` file in the root directory:
-
-- **Automatic Setup**: `.env` is created from `.env.example` during `npm install`
-- **Automatic Distribution**: When running `npm run dev`, the root `.env` is distributed to all apps and packages via symlinks
-- **Excluded Packages**: Config packages (`eslint-config`, `jest-config`, `typescript-config`) don't receive `.env` files
-- **Single Source of Truth**: All environment variables are managed in the root `.env` file
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```bash
-npx turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```bash
-npx turbo link
-```
+The provider ledger is mocked in PostgreSQL. Authentication, per-store device authorization, inventory reservations, promotions, real payment integration and fleet reconciliation workers are not implemented. Production would need those controls, reviewed database migrations, and a durable store-level gateway or IndexedDB/SQLite storage. Checksums detect corruption, not hostile tampering.
