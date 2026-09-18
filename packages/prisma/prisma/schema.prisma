@@ -19,3 +19,43 @@ model Link {
 
   @@map("links")
 }
+
+model MenuSnapshot {
+  version Int @id @default(autoincrement())
+  checksum String
+  items Json
+  createdAt DateTime @default(now())
+}
+model CheckoutQuote {
+  id String @id @default(uuid())
+  menuVersion Int
+  items Json
+  total Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  payment Payment?
+}
+model Payment {
+  id String @id
+  quoteId String @unique
+  quote CheckoutQuote @relation(fields: [quoteId], references: [id])
+  status String
+  providerStatus String
+  amount Int
+  order KioskOrder?
+  createdAt DateTime @default(now())
+}
+model KioskEvent {
+  id String @id
+  payload Json
+  createdAt DateTime @default(now())
+}
+
+model KioskOrder {
+  id String @id @default(uuid())
+  paymentId String @unique
+  payment Payment @relation(fields: [paymentId], references: [id])
+  total Int
+  items Json
+  createdAt DateTime @default(now())
+}

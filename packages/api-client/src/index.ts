@@ -9,3 +9,5 @@ export type {
   UpdateLinkDto,
   Link,
 } from './types.js';
+
+export * from './kiosk.js';
