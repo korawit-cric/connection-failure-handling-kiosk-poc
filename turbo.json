@@ -27,7 +27,9 @@
     "check-types": {
       "dependsOn": ["^build"]
     },
-    "test": {},
+    "test": {
+      "env": ["TEST_API", "TEST_WEB", "PLAYWRIGHT_MODULE"]
+    },
     "test:e2e": {}
   }
 }
