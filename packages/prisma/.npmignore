@@ -1,0 +1,40 @@
+# Source files
+src/
+tsconfig.json
+
+# Development files
+.env
+.env.*
+!.env.example
+
+# Build artifacts (will be included via files field)
+# dist/ is included in files
+
+# Dependencies
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+.git/
+.gitignore
+
+
+
+

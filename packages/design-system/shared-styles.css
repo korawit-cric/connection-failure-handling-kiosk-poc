@@ -1,0 +1,208 @@
+@import 'tailwindcss';
+
+/* Design System Global Styles */
+/* These styles are shared across all frontend applications */
+
+@theme {
+  --color-*: initial; /* Removes all default colors */
+
+  /* Primary Colors - Urban Sage (grassy green) */
+  --color-primary-50: #f0fdf7;
+  --color-primary-100: #dbf7eb;
+  --color-primary-200: #a8ead0;
+  --color-primary-300: #59dcaf;
+  --color-primary-400: #45b58c;
+  --color-primary-500: #3a9e76;
+  --color-primary-600: #30906a;
+  --color-primary-700: #2f7858;
+  --color-primary-800: #2e603c;
+  --color-primary-900: #1a3b24;
+
+  /* Status Colors - Success (Green) */
+  --color-success-100: #dbf7eb;
+  --color-success-800: #367a49;
+
+  /* Status Colors - Error (Red) */
+  --color-error-300: #d34545;
+  --color-error-500: #b83838;
+  --color-error-800: #bd232d;
+
+  /* Status Colors - Warning (Yellow) */
+  --color-warning-300: #ffc107;
+  --color-warning-500: #ffb300;
+  --color-warning-800: #d9a506;
+
+  --color-white: #fafafa;
+  --color-lightest-gray: #f5f5f5;
+  --color-light-gray: #e9e9e9;
+  --color-gray: #d9d9d9;
+  --color-medium-gray: #9d9d9d;
+  --color-dark-gray: #7b7b7b;
+  --color-bold-gray: #555555;
+  --color-darkest-gray: #262626;
+  --color-black: #000000;
+
+  /* Default essential colors */
+  --color-inherit: inherit;
+  --color-transparent: transparent;
+
+  /* Desktop Text Styles - Font Sizes */
+  --font-size-desktop-h1: 48px;
+  --font-size-desktop-h2: 36px;
+  --font-size-desktop-h3: 28px;
+  --font-size-desktop-h4: 24px;
+  --font-size-desktop-body1: 18px;
+  --font-size-desktop-body2: 16px;
+  --font-size-desktop-caption: 14px;
+
+  /* The design system provided is not conventional, thus we override all text tailwind classes */
+  /* --text-*: initial; */
+
+  /* Desktop Text Styles - Line Heights */
+  --line-height-desktop-h1: 72px;
+  --line-height-desktop-h2: 54px;
+  --line-height-desktop-h3: 42px;
+  --line-height-desktop-h4: 36px;
+  --line-height-desktop-body1: 27px;
+  --line-height-desktop-body2: 24px;
+  --line-height-desktop-caption: 22px;
+
+  /* Mobile Text Styles - Font Sizes */
+  --font-size-mobile-h1: 32px;
+  --font-size-mobile-h2: 28px;
+  --font-size-mobile-h3: 22px;
+  --font-size-mobile-h4: 30px;
+  --font-size-mobile-body1: 16px;
+  --font-size-mobile-body2: 14px;
+  --font-size-mobile-caption: 12px;
+
+  /* Mobile Text Styles - Line Heights */
+  --line-height-mobile-h1: 48px;
+  --line-height-mobile-h2: 40px;
+  --line-height-mobile-h3: 34px;
+  --line-height-mobile-h4: 42px;
+  --line-height-mobile-body1: 26px;
+  --line-height-mobile-body2: 22px;
+  --line-height-mobile-caption: 18px;
+
+  --font-prompt: 'Prompt', sans-serif;
+
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  --surface: rgba(15, 23, 42, 0.05);
+  --border: rgba(15, 23, 42, 0.15);
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Custom Text Style Utilities - Using @utility for Tailwind v4
+ * 
+ * IMPORTANT: These custom utilities (text-desktop-*, text-mobile-*) must be
+ * registered in packages/ui/src/utils.ts tailwind-merge configuration.
+ * Without that registration, tailwind-merge will strip these classes when
+ * merging class names, causing them to not work in UI components.
+ */
+@utility text-desktop-h1 {
+  font-weight: 400;
+  font-size: var(--font-size-desktop-h1);
+  line-height: var(--line-height-desktop-h1);
+}
+
+@utility text-desktop-h2 {
+  font-weight: 400;
+  font-size: var(--font-size-desktop-h2);
+  line-height: var(--line-height-desktop-h2);
+}
+
+@utility text-desktop-h3 {
+  font-weight: 400;
+  font-size: var(--font-size-desktop-h3);
+  line-height: var(--line-height-desktop-h3);
+}
+
+@utility text-desktop-h4 {
+  font-weight: 400;
+  font-size: var(--font-size-desktop-h4);
+  line-height: var(--line-height-desktop-h4);
+}
+
+@utility text-desktop-body1 {
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 27px;
+}
+
+@utility text-desktop-body2 {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+@utility text-desktop-caption {
+  font-weight: 400;
+  font-size: var(--font-size-desktop-caption);
+  line-height: var(--line-height-desktop-caption);
+}
+
+@utility text-mobile-h1 {
+  font-weight: 400;
+  font-size: var(--font-size-mobile-h1);
+  line-height: var(--line-height-mobile-h1);
+}
+
+@utility text-mobile-h2 {
+  font-weight: 400;
+  font-size: var(--font-size-mobile-h2);
+  line-height: var(--line-height-mobile-h2);
+}
+
+@utility text-mobile-h3 {
+  font-weight: 400;
+  font-size: var(--font-size-mobile-h3);
+  line-height: var(--line-height-mobile-h3);
+}
+
+@utility text-mobile-h4 {
+  font-weight: 400;
+  font-size: var(--font-size-mobile-h4);
+  line-height: var(--line-height-mobile-h4);
+}
+
+@utility text-mobile-body1 {
+  font-weight: 400;
+  font-size: var(--font-size-mobile-body1);
+  line-height: var(--line-height-mobile-body1);
+}
+
+@utility text-mobile-body2 {
+  font-weight: 400;
+  font-size: var(--font-size-mobile-body2);
+  line-height: var(--line-height-mobile-body2);
+}
+
+@utility text-mobile-caption {
+  font-weight: 400;
+  font-size: var(--font-size-mobile-caption);
+  line-height: var(--line-height-mobile-caption);
+}

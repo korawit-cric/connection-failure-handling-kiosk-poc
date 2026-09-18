@@ -1,0 +1,45 @@
+{
+  "name": "@repo/ui",
+  "version": "0.0.0",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    "./utils": "./src/utils.ts",
+    "./styles.css": "./dist/index.css",
+    "./*": "./dist/*.js"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build:styles": "tailwindcss -i ./src/styles.css -o ./dist/index.css",
+    "build:components": "tsc",
+    "check-types": "tsc --noEmit",
+    "dev:styles": "tailwindcss -i ./src/styles.css -o ./dist/index.css --watch",
+    "dev:components": "tsc --watch",
+    "lint": "eslint src --max-warnings 0"
+  },
+  "dependencies": {
+    "@repo/icons": "*",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.5.4"
+  },
+  "peerDependencies": {
+    "react": "^19",
+    "react-hook-form": "^7.0.0",
+    "zod": "^3.24.1",
+    "@hookform/resolvers": "^3.9.1"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "*",
+    "@repo/design-system": "*",
+    "@repo/typescript-config": "*",
+    "@tailwindcss/cli": "^4.1.5",
+    "@types/react": "^19.1.0",
+    "eslint": "^9.39.1",
+    "tailwindcss": "^4.1.5",
+    "typescript": "5.9.2"
+  }
+}

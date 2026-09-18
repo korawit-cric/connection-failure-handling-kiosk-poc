@@ -1,0 +1,60 @@
+{
+  "name": "cric-monex-root-template-v2",
+  "version": "0.0.0",
+  "private": true,
+  "description": "",
+  "author": "",
+  "license": "UNLICENSED",
+  "scripts": {
+    "postinstall": "node scripts/setup-env.js",
+    "predev": "node scripts/distribute-env.js",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "lint": "turbo run lint && prettier --check \"**/*.{ts,tsx,json,md}\"",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "db:start": "./scripts/db-start.sh",
+    "db:stop": "./scripts/db-stop.sh",
+    "db:up": "cd apps/db && docker-compose up -d postgres",
+    "db:down": "cd apps/db && docker-compose down",
+    "db:logs": "cd apps/db && docker-compose logs -f postgres",
+    "db:ps": "cd apps/db && docker-compose ps",
+    "db:generate": "cd packages/prisma && npm run db:generate",
+    "db:push": "cd packages/prisma && npm run db:push",
+    "db:migrate": "cd packages/prisma && npm run db:migrate",
+    "db:seed": "cd packages/prisma && npm run db:seed",
+    "db:studio": "cd packages/prisma && npm run db:studio",
+    "env:setup": "node scripts/setup-env.js",
+    "env:distribute": "node scripts/distribute-env.js",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.2.5",
+    "prettier-plugin-tailwindcss": "^0.7.2",
+    "turbo": "^2.6.3"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "packageManager": "npm@10.2.3",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "lint-staged": {
+    "*.{ts,tsx,mjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css,yml,yaml,js}": [
+      "prettier --write"
+    ]
+  }
+}

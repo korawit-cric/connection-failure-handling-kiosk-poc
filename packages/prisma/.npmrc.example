@@ -1,0 +1,9 @@
+# Example .npmrc for publishing
+# Remove this file or update with your actual registry settings
+
+# For scoped packages, ensure access is public
+# @repo:registry=https://registry.npmjs.org/
+
+
+
+

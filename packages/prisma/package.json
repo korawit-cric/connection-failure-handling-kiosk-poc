@@ -1,0 +1,71 @@
+{
+  "name": "@repo/prisma",
+  "version": "1.0.0",
+  "description": "Shared Prisma client and schema package with PostgreSQL support",
+  "keywords": [
+    "prisma",
+    "database",
+    "orm",
+    "postgresql",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "scripts": {
+    "prebuild": "prisma generate",
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx --tsconfig tsconfig.json prisma/seed.ts",
+    "postinstall": "prisma generate"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "prisma/**/*",
+    "README.md",
+    "package.json"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./schema": "./prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.1.0",
+    "@prisma/client": "^7.1.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.3",
+    "dotenv": "^17.2.3",
+    "pg": "^8.16.3"
+  },
+  "peerDependencies": {
+    "prisma": "^7.1.0"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/node": "^22.10.7",
+    "@types/pg": "^8.16.0",
+    "prisma": "^7.1.0",
+    "prisma-generator-nestjs-dto": "^1.1.4",
+    "tsx": "^4.19.2",
+    "typescript": "5.5.4"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

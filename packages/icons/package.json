@@ -1,0 +1,40 @@
+{
+  "name": "@repo/icons",
+  "version": "0.0.0",
+  "private": true,
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "src"
+  ],
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./dist/*.js"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "npm run build:icons && npm run build:index",
+    "build:icons": "svgr --out-dir dist --typescript --config-file .svgrrc.js src/icons",
+    "build:index": "node scripts/generate-index.mjs",
+    "dev": "chokidar \"src/icons/**/*.svg\" --initial --debounce 300 -c \"npm run build\" --verbose",
+    "check-types": "npm run build && tsc --noEmit",
+    "lint": "eslint src --max-warnings 0"
+  },
+  "peerDependencies": {
+    "react": "^19"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "@svgr/cli": "^8.1.0",
+    "@types/react": "^19.1.0",
+    "chokidar-cli": "^3.0.0",
+    "eslint": "^9.39.1",
+    "typescript": "5.9.2"
+  },
+  "dependencies": {
+    "@svgr/core": "^8.1.0"
+  }
+}

@@ -1,0 +1,4 @@
+# Prisma Configuration
+# This file helps the Prisma extension recognize the correct Prisma version
+version=5.22.0
+
