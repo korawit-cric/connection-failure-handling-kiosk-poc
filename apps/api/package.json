@@ -21,7 +21,9 @@
     "@nestjs/swagger": "^11.2.3",
     "@repo/prisma": "*",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "@repo/api-client": "*",
+    "dotenv": "^17.2.3"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",

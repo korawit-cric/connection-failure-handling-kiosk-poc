@@ -1,3 +1,5 @@
+import { KioskService } from './kiosk/kiosk.service';
+import { KioskController } from './kiosk/kiosk.controller';
 import { Module } from '@nestjs/common';
 
 import { LinksModule } from './links/links.module';
@@ -8,7 +10,7 @@ import { AppController } from './app.controller';
 
 @Module({
   imports: [PrismaModule, LinksModule],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, KioskController],
+  providers: [AppService, KioskService],
 })
 export class AppModule {}
